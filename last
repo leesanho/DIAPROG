@@ -1,0 +1,211 @@
+let particles = [];
+let attractor;
+let repeller;
+let particleCountSlider;
+
+function setup() {
+  createCanvas(600, 400);
+
+  particleCountSlider = createSlider(1, 200, 50); 
+  particleCountSlider.position(20, 20);
+
+  attractor = new Attractor(color(144, 176, 225)); 
+  repeller = new Repeller(color(255, 144, 176)); 
+
+  for (let i = 0; i < particleCountSlider.value(); i++) {
+    particles.push(new Particle(random(width), random(height)));
+  }
+}
+
+function draw() {
+  background(255);
+
+  
+  attractor.update();
+  repeller.update();
+
+  for (let i = 0; i < particles.length; i++) {
+    let particle = particles[i];
+
+    
+    let attractorForce = attractor.calculateAttraction(particle);
+    let repellerForce = repeller.calculateRepulsion(particle);
+
+    
+    particle.applyForce(attractorForce);
+    particle.applyForce(repellerForce);
+
+   
+    particle.update();
+    particle.display();
+  }
+
+
+  attractor.display();
+  repeller.display();
+}
+
+
+class Particle {
+  constructor(x, y) {
+    this.position = createVector(x, y);
+    this.velocity = createVector(random(-2, 2), random(-2, 2));
+    this.acceleration = createVector(0, 0);
+    this.maxSpeed = 4; 
+    this.prevPosition = createVector(x, y);
+  }
+
+  applyForce(force) {
+    this.acceleration.add(force);
+  }
+
+  update() {
+    this.velocity.add(this.acceleration);
+    this.velocity.limit(this.maxSpeed); 
+    this.prevPosition.set(this.position.x, this.position.y);
+    this.position.add(this.velocity);
+    this.acceleration.mult(0); 
+
+    
+    this.checkEdges();
+  }
+
+  display() {
+    stroke(0, 50);
+    strokeWeight(2); 
+    line(this.prevPosition.x, this.prevPosition.y, this.position.x, this.position.y);
+  }
+
+  checkEdges() {
+    if (this.position.x > width) this.position.x = 0;
+    else if (this.position.x < 0) this.position.x = width;
+
+    if (this.position.y > height) this.position.y = 0;
+    else if (this.position.y < 0) this.position.y = height;
+  }
+}
+
+
+class Attractor {
+  constructor(color) {
+    this.position = createVector(width / 2, height / 2);
+    this.mass = 20;
+    this.color = color;
+    this.dragging = false;
+    this.offset = createVector(0, 0);
+  }
+
+  calculateAttraction(particle) {
+    let force = p5.Vector.sub(this.position, particle.position);
+    let distance = force.mag();
+    distance = constrain(distance, 5, 25);
+    force.normalize();
+
+    let strength = (0.4 * this.mass * particle.mass) / (distance * distance);
+    force.mult(strength);
+    return force;
+  }
+
+  update() {
+    
+    if (this.dragging) {
+      this.position.x = mouseX + this.offset.x;
+      this.position.y = mouseY + this.offset.y;
+    }
+  }
+
+  display() {
+    let blurAmount = 20;
+    fill(this.color);
+    noStroke();
+    ellipseMode(RADIUS);
+    ellipse(this.position.x, this.position.y, 30, 30);
+
+    
+    for (let i = 0; i < blurAmount; i++) {
+      fill(144, 176, 225, 7);
+      ellipse(this.position.x, this.position.y, 30 + i, 30 + i);
+    }
+  }
+
+  mousePressed() {
+    let d = dist(mouseX, mouseY, this.position.x, this.position.y);
+    if (d < 15) {
+      this.dragging = true;
+      this.offset.x = this.position.x - mouseX;
+      this.offset.y = this.position.y - mouseY;
+    }
+  }
+
+  mouseReleased() {
+    this.dragging = false;
+  }
+}
+
+
+class Repeller {
+  constructor(color) {
+    this.position = createVector(width / 4, height / 4);
+    this.mass = 20;
+    this.color = color;
+    this.dragging = false;
+    this.offset = createVector(0, 0);
+  }
+
+  calculateRepulsion(particle) {
+    let force = p5.Vector.sub(particle.position, this.position);
+    let distance = force.mag();
+    distance = constrain(distance, 5, 25);
+    force.normalize();
+
+    let strength = (0.4 * this.mass * particle.mass) / (distance * distance);
+    force.mult(strength);
+    return force;
+  }
+
+  update() {
+    
+    if (this.dragging) {
+      this.position.x = mouseX + this.offset.x;
+      this.position.y = mouseY + this.offset.y;
+    }
+  }
+
+  display() {
+    let blurAmount = 20;
+    fill(this.color);
+    noStroke();
+    ellipseMode(RADIUS);
+    ellipse(this.position.x, this.position.y, 30, 30);
+
+    
+    for (let i = 0; i < blurAmount; i++) {
+      fill(255, 144, 171, 7);
+      ellipse(this.position.x, this.position.y, 30 + i, 30 + i);
+    }
+  }
+
+  mousePressed() {
+    let d = dist(mouseX, mouseY, this.position.x, this.position.y);
+    if (d < 15) {
+      this.dragging = true;
+      this.offset.x = this.position.x - mouseX;
+      this.offset.y = this.position.y - mouseY;
+    }
+  }
+
+  mouseReleased() {
+    this.dragging = false;
+  }
+}
+
+
+function mousePressed() {
+  attractor.mousePressed();
+  repeller.mousePressed();
+}
+
+function mouseReleased() {
+  attractor.mouseReleased();
+  repeller.mouseReleased();
+}
